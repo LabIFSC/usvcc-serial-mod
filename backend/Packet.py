@@ -51,6 +51,9 @@ class PacketProcessor:
   current_packet_size = 0
 
   current_packet_content = ""
+  current_packet_buff = bytearray()
+
+  counter = 0
 
   def __init__(self, serial, signature_bytes):
     self.serial = serial
@@ -64,6 +67,7 @@ class PacketProcessor:
 
     if (self.serial.in_waiting > 0):
 
+      global counter
       data = 0
 
       match self.current_step:
@@ -84,8 +88,9 @@ class PacketProcessor:
 
           data = self.serial.read(size=2) # Content-Length: serialize as int
           data_int = int.from_bytes(data, self.cfg_endianess)
-          self.current_packet_size = data
-          print("Content Length: {0}".format(int.from_bytes(data, self.cfg_endianess)))
+          # break
+          self.current_packet_size = int.from_bytes(data, self.cfg_endianess)
+          print("Content Length: {0}\n".format(int.from_bytes(data, self.cfg_endianess)))
 
           self.current_step = "content"
           pass
@@ -94,60 +99,63 @@ class PacketProcessor:
           # read 1 byte at a time, increament read counter till it reaches
           # previously parsed 'Content-Length'
           data = self.serial.read(size=1)
-          self.current_packet_content.append(data)
-          print("Content: {0}".format(data))
+          self.current_packet_content += data.decode()
+          # self.current_packet_buff.append(data)
+          print("Content: {0}; Counter: {1}".format(data, self.counter))
 
-          counter += 1
-          if ((counter + 1) >= self.current_packet_size):
+          if ((self.counter + 1) >= self.current_packet_size):
             # expected to be content padding byte
             data = self.serial.read(size=1)
             print("Content Padding: {0}".format(data))
 
-            if (data == '\n'):
-              self.current_packet_content.append('\0')
+            # content-pad byte
+            if (data == b'Z'):
+              # self.current_packet_content += "\0"
+              # self.current_packet_buff.append('\0')
             # todo: pad content
-            self.current_step = "eol"
+              self.current_step = "eol"
           pass
+          self.counter += 1
 
         case "eol":
           data = self.serial.read(1)
+          print("EOL: {0}".format(data))
           if data == '\n':
             # Packet streaming process completed with sucess
-            print("EOL: {0}".format(data))
-          # todo: clean up state
-          # assemble complete packet and push into a packet buffer
-          self.current_step = "sync"
+            # assemble complete packet and push into a packet buffer
+            self.current_step = "sync"
+          # decide what to do in case bytes dont match
           pass
 
       pass
 
       # check for sync bytes
-      data = self.serial.read(size=2) # 2 8bit bytes
+      # data = self.serial.read(size=2) # 2 8bit bytes
 
-      # attempt to read remaining header
-      if  data == self.signt_bytes:
-        print("Sync bytes: {0}".format(data))
+      # # attempt to read remaining header
+      # if  data == self.signt_bytes:
+      #   print("Sync bytes: {0}".format(data))
 
-        data = self.serial.read(size=2)
-        print("ID: {0}".format(int.from_bytes(data, self.cfg_endianess)))
-        # todo: Hash map already received packets
-        # if a packet with same id already has been received, skip
+      #   data = self.serial.read(size=2)
+      #   print("ID: {0}".format(int.from_bytes(data, self.cfg_endianess)))
+      #   # todo: Hash map already received packets
+      #   # if a packet with same id already has been received, skip
 
-        data = self.serial.read(size=2)
-        data_int = int.from_bytes(data, self.cfg_endianess)
-        print("Content Length: {0}".format(int.from_bytes(data, self.cfg_endianess)))
+      #   data = self.serial.read(size=2)
+      #   data_int = int.from_bytes(data, self.cfg_endianess)
+      #   print("Content Length: {0}".format(int.from_bytes(data, self.cfg_endianess)))
 
-        data = self.serial.read(size = data_int)
-        print("Content: {0}".format(data))
+      #   data = self.serial.read(size = data_int)
+      #   print("Content: {0}".format(data))
 
-        data = self.serial.read(1)
-        print("Content Padding: {0}".format(data))
+      #   data = self.serial.read(1)
+      #   print("Content Padding: {0}".format(data))
 
-        data = self.serial.read(1)
-        print("EOL: {0}".format(data))
-        # data = s.read(1) # Attempt to read the next 4 bytes in the header
-        # print("Header: {0}".format(data.decode("utf-8")))
+      #   data = self.serial.read(1)
+      #   print("EOL: {0}".format(data))
+      #   # data = s.read(1) # Attempt to read the next 4 bytes in the header
+      #   # print("Header: {0}".format(data.decode("utf-8")))
 
-      pass
+      # pass
     pass
   pass

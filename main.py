@@ -25,18 +25,13 @@ class Packet:
 
 if __name__ == '__main__':
 
-  processing_header = False
-  processing_content = False
-
-  new_packet = False
-
-  packet_p = PacketProcessor(s)
+  packet_p = PacketProcessor(s, b'\xff\xaa')
 
   while(1):
 
     if on_interval(1000):
       # pipe incoming bytes into buffer
-      PacketProcessor.process()
+      packet_p.process()
       pass
         
     pass

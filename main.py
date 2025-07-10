@@ -3,9 +3,9 @@ import serial
 from backend.Packet import PacketProcessor
 
 _port_name = "COM3"
-_default_bauld_rate = 115200
+_default_baud_rate = 115200
 
-s = serial.Serial(port=_port_name, baudrate=_default_bauld_rate)
+s = serial.Serial(port=_port_name, baudrate=_default_baud_rate)
 
 _last_interval = 0
 
